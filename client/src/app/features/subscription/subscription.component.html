@@ -1,0 +1,139 @@
+<div class="layout">
+  <nav class="sidebar">
+    <div class="brand">Analytics</div>
+    <a routerLink="/dashboard" class="nav-item">Dashboard</a>
+    <a routerLink="/subscription" class="nav-item active">Subscription</a>
+    <a routerLink="/imports" class="nav-item">Imports</a>
+    @if (auth.isAdmin()) {
+      <a routerLink="/organizations" class="nav-item">Organizations</a>
+    }
+    <a routerLink="/analytics" class="nav-item">Analytics</a>
+    @if (auth.isOrgAdmin()) {
+      <a routerLink="/stores" class="nav-item">Stores</a>
+    }
+    @if (auth.isAdmin()) {
+      <a routerLink="/admin" class="nav-item">Admin</a>
+    }
+    <a routerLink="/profile" class="nav-item user-link">
+      <span class="user-avatar">{{ auth.user()?.fullName?.charAt(0)?.toUpperCase() }}</span>
+      {{ auth.user()?.fullName }}
+    </a>
+    <button class="nav-item logout" (click)="logout()">Logout</button>
+  </nav>
+
+  <main class="content">
+    <div class="page-header">
+      <h1>My Subscription</h1>
+      <button class="btn-primary" (click)="openModal()">+ Generate Key</button>
+    </div>
+
+    <!-- Generate key modal -->
+    @if (showModal()) {
+      <div class="modal-backdrop" (click)="closeModal()">
+        <div class="modal" (click)="$event.stopPropagation()">
+          @if (!generatedKey()) {
+            <div class="key-icon">🔑</div>
+            <h2>Generate New Key</h2>
+            <p class="modal-hint">
+              A new key valid for <strong>1 year</strong> will be created for your account.
+              Any existing active key will be revoked.
+            </p>
+
+            <div class="modal-actions">
+              <button class="btn-cancel" (click)="closeModal()">Cancel</button>
+              <button class="btn-primary" [disabled]="generating()" (click)="generate()">
+                {{ generating() ? 'Generating…' : 'Generate Key' }}
+              </button>
+            </div>
+          } @else {
+            <div class="gen-success-icon">✓</div>
+            <h2>Key Generated</h2>
+            <p class="modal-hint warn">Copy this key now — it will <strong>not be shown again</strong>.</p>
+
+            <div class="key-reveal">
+              <code>{{ generatedKey() }}</code>
+              <button class="copy-btn" (click)="copyGenerated()">
+                {{ genCopied() ? '✓ Copied' : 'Copy' }}
+              </button>
+            </div>
+
+            <div class="modal-actions">
+              <button class="btn-primary" (click)="closeModal()">Done</button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="loading">Loading…</div>
+    } @else if (info()) {
+
+      <div class="cards-row">
+        <!-- Plan card -->
+        <div class="card plan-card">
+          <div class="card-label">Current Plan</div>
+          <div class="plan-badge" [class]="info()!.plan.toLowerCase()">{{ info()!.plan }}</div>
+          <div class="status" [class.active]="info()!.isActive" [class.inactive]="!info()!.isActive">
+            {{ info()!.isActive ? 'Active' : 'Inactive' }}
+          </div>
+          <div class="meta">Since {{ info()!.startDate | date:'mediumDate' }}</div>
+          @if (info()!.endDate) {
+            <div class="meta">Renews {{ info()!.endDate | date:'mediumDate' }}</div>
+          }
+        </div>
+
+        <!-- API Key card -->
+        <div class="card key-card" [class.empty]="!info()!.key">
+          <div class="card-label">API Key</div>
+
+          @if (info()!.key) {
+            <div class="key-display">
+              <code>{{ info()!.key }}</code>
+              <button class="copy-btn" (click)="copyKey(info()!.key!)" title="Copy key">
+                {{ keyCopied() ? '✓ Copied' : 'Copy' }}
+              </button>
+            </div>
+            <div class="expiry-row">
+              <span class="expiry-label">Valid for</span>
+              <span class="days-badge" [class]="urgencyClass(info()!.daysRemaining)">
+                {{ info()!.daysRemaining }} days remaining
+              </span>
+            </div>
+            @if (info()!.endDate) {
+              <div class="issued-at">Expires {{ info()!.endDate | date:'mediumDate' }}</div>
+            }
+          } @else {
+            <p class="empty-msg">No active key. Click <strong>+ Generate Key</strong> above to create one.</p>
+          }
+        </div>
+      </div>
+
+      <!-- Key history -->
+      @if (history().length > 0) {
+        <section class="section">
+          <h2>Key History</h2>
+          <table>
+            <thead>
+              <tr><th>Key</th><th>Issued</th><th>Expires</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              @for (k of history(); track k.id) {
+                <tr [class.current]="k.isActive">
+                  <td><code>{{ k.key }}</code></td>
+                  <td>{{ k.issuedAt | date:'mediumDate' }}</td>
+                  <td>{{ k.expiresAt | date:'mediumDate' }}</td>
+                  <td>
+                    <span class="badge" [class.active]="k.isActive" [class.expired]="!k.isActive">
+                      {{ k.isActive ? 'Active' : 'Expired' }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      }
+    }
+  </main>
+</div>

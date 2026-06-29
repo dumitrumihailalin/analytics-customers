@@ -1,0 +1,155 @@
+<div class="layout">
+  <nav class="sidebar">
+    <div class="brand">Analytics</div>
+    <a routerLink="/dashboard" class="nav-item">Dashboard</a>
+    <a routerLink="/subscription" class="nav-item">Subscription</a>
+    <a routerLink="/imports" class="nav-item">Imports</a>
+    @if (auth.isAdmin()) {
+      <a routerLink="/organizations" class="nav-item">Organizations</a>
+    }
+    <a routerLink="/analytics" class="nav-item">Analytics</a>
+    <a routerLink="/stores" class="nav-item active">Stores</a>
+    @if (auth.isAdmin()) {
+      <a routerLink="/admin" class="nav-item">Admin</a>
+    }
+    <a routerLink="/profile" class="nav-item user-link">
+      <span class="user-avatar">{{ auth.user()?.fullName?.charAt(0)?.toUpperCase() }}</span>
+      {{ auth.user()?.fullName }}
+    </a>
+    <button class="nav-item logout" (click)="logout()">Logout</button>
+  </nav>
+
+  <main class="content">
+    <div class="page-header">
+      <h1>Stores</h1>
+      @if (auth.isOrgAdmin()) {
+        <button class="btn-primary" (click)="openCreate()">+ New Store</button>
+      }
+    </div>
+
+    @if (showStoreForm()) {
+      <div class="modal-backdrop" (click)="closeForm()">
+        <div class="modal" (click)="$event.stopPropagation()">
+          <h2>{{ editingId() ? 'Edit' : 'New' }} Store</h2>
+          <form (ngSubmit)="save()">
+            @if (auth.isAdmin() && !editingId()) {
+              <label>Organization *
+                <select [(ngModel)]="formOrgId" name="orgId" required>
+                  @for (org of organizations(); track org.id) {
+                    <option [value]="org.id">{{ org.name }}</option>
+                  }
+                </select>
+              </label>
+            }
+            <label>Store Name *
+              <input type="text" [(ngModel)]="formName" name="storeName" required autofocus />
+            </label>
+            <div class="form-row-2">
+              <label>Street
+                <input type="text" [(ngModel)]="formStreet" name="street" />
+              </label>
+              <label>Country
+                <input type="text" [(ngModel)]="formCountry" name="country" placeholder="e.g. Romania" />
+              </label>
+            </div>
+            <label>Website
+              <input type="url" [(ngModel)]="formWebsite" name="website" placeholder="https://..." />
+            </label>
+            <div class="modal-actions">
+              <button type="button" class="btn-cancel" (click)="closeForm()">Cancel</button>
+              <button type="submit" class="btn-primary" [disabled]="saving() || !formName">
+                {{ saving() ? 'Saving…' : (editingId() ? 'Update' : 'Create') }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="loading">Loading…</div>
+    } @else {
+      <div class="stores-list">
+        @for (store of stores(); track store.id) {
+          <div class="store-card">
+            <div class="store-header">
+              <div class="store-info">
+                <div class="store-name">{{ store.storeName }}</div>
+                <div class="store-meta">
+                  @if (auth.isAdmin()) {
+                    <span class="org-tag">{{ store.organizationName }}</span>
+                  }
+                  @if (store.country) { <span>{{ store.country }}</span> }
+                  @if (store.website) {
+                    <a [href]="store.website" target="_blank" rel="noopener" class="website-link">↗ Website</a>
+                  }
+                  <span class="key-count">{{ store.apiKeyCount }} API {{ store.apiKeyCount === 1 ? 'key' : 'keys' }}</span>
+                </div>
+              </div>
+              <div class="store-actions">
+                <button class="btn-sm" (click)="toggleKeys(store)">
+                  {{ expandedStoreId() === store.id ? 'Hide Keys' : 'API Keys' }}
+                </button>
+                @if (auth.isOrgAdmin()) {
+                  <button class="btn-sm" (click)="openEdit(store)">Edit</button>
+                  <button class="btn-sm danger" (click)="deleteStore(store)">Delete</button>
+                }
+              </div>
+            </div>
+
+            @if (expandedStoreId() === store.id) {
+              <div class="keys-panel">
+                <div class="keys-header">
+                  <span class="keys-title">API Keys</span>
+                  @if (auth.isOrgAdmin()) {
+                    <button class="btn-sm btn-generate" (click)="generateKey(store.id)">Generate Key</button>
+                  }
+                </div>
+
+                @if (generatedKey() && generatedKey()!.storeId === store.id) {
+                  <div class="new-key-alert">
+                    <div class="new-key-label">New key generated — copy it now, it will not be shown again:</div>
+                    <div class="new-key-value">{{ generatedKey()!.rawKey }}</div>
+                    <button class="btn-sm" (click)="dismissGeneratedKey()">Dismiss</button>
+                  </div>
+                }
+
+                @if (keysLoading()) {
+                  <div class="keys-loading">Loading keys…</div>
+                } @else {
+                  <table class="keys-table">
+                    <thead>
+                      <tr><th>Prefix</th><th>Status</th><th>Created</th><th>Expires</th><th>Last Used</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                      @for (key of storeKeys(); track key.id) {
+                        <tr>
+                          <td class="key-prefix">{{ key.prefix }}…</td>
+                          <td><span class="badge" [class.active]="key.isActive" [class.inactive]="!key.isActive">{{ key.isActive ? 'Active' : 'Revoked' }}</span></td>
+                          <td>{{ key.createdAt | date:'mediumDate' }}</td>
+                          <td>{{ key.expiresAt ? (key.expiresAt | date:'mediumDate') : 'Never' }}</td>
+                          <td>{{ key.lastUsedAt ? (key.lastUsedAt | date:'mediumDate') : '—' }}</td>
+                          <td>
+                            @if (key.isActive && auth.isOrgAdmin()) {
+                              <button class="btn-sm danger" (click)="deactivateKey(key.id)">Revoke</button>
+                            }
+                          </td>
+                        </tr>
+                      }
+                      @empty {
+                        <tr><td colspan="6" class="empty">No API keys yet.</td></tr>
+                      }
+                    </tbody>
+                  </table>
+                }
+              </div>
+            }
+          </div>
+        }
+        @empty {
+          <div class="empty-state">No stores yet.</div>
+        }
+      </div>
+    }
+  </main>
+</div>

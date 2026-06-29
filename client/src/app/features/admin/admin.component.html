@@ -1,0 +1,68 @@
+<div class="layout">
+  <nav class="sidebar">
+    <div class="brand">Analytics</div>
+    <a routerLink="/dashboard" class="nav-item">Dashboard</a>
+    <a routerLink="/subscription" class="nav-item">Subscription</a>
+    <a routerLink="/imports" class="nav-item">Imports</a>
+    <a routerLink="/organizations" class="nav-item">Organizations</a>
+    <a routerLink="/analytics" class="nav-item">Analytics</a>
+    <a routerLink="/stores" class="nav-item">Stores</a>
+    <a routerLink="/admin" class="nav-item active">Admin</a>
+    <a routerLink="/profile" class="nav-item user-link">
+      <span class="user-avatar">{{ auth.user()?.fullName?.charAt(0)?.toUpperCase() }}</span>
+      {{ auth.user()?.fullName }}
+    </a>
+    <button class="nav-item logout" (click)="logout()">Logout</button>
+  </nav>
+
+  <main class="content">
+    <h1>Admin Panel</h1>
+
+    @if (!loading() && stats()) {
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="label">Total Users</span>
+          <span class="value">{{ stats()!.totalUsers }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="label">Active Subscriptions</span>
+          <span class="value">{{ stats()!.activeSubscriptions }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="label">Orders Processed</span>
+          <span class="value">{{ stats()!.totalOrdersProcessed }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="label">Platform Revenue</span>
+          <span class="value">${{ stats()!.platformTotalRevenue | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    }
+
+    <section class="section">
+      <h2>Users</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th><th>Email</th><th>Level</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of users(); track user.id) {
+            <tr>
+              <td>{{ user.fullName }}</td>
+              <td>{{ user.email }}</td>
+              <td><span class="badge" [class.admin]="user.level === 'PlatformAdmin'">{{ user.level }}</span></td>
+              <td><span class="badge" [class.active]="user.isActive" [class.inactive]="!user.isActive">{{ user.isActive ? 'Active' : 'Inactive' }}</span></td>
+              <td>
+                <button class="btn-sm" (click)="toggle(user.id)">
+                  {{ user.isActive ? 'Deactivate' : 'Activate' }}
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  </main>
+</div>

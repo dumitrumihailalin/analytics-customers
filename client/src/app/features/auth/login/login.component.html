@@ -1,0 +1,24 @@
+<div class="login-wrapper">
+  <div class="login-card">
+    <h1>Analytics Platform</h1>
+    <h2>Sign in</h2>
+
+    @if (error()) {
+      <div class="error">{{ error() }}</div>
+    }
+
+    <form (ngSubmit)="submit()">
+      <label>Email
+        <input type="email" [(ngModel)]="email" name="email" required autocomplete="email" />
+      </label>
+      <label>Password
+        <input type="password" [(ngModel)]="password" name="password" required autocomplete="current-password" />
+      </label>
+      <button type="submit" [disabled]="loading()">
+        {{ loading() ? 'Signing in…' : 'Sign in' }}
+      </button>
+    </form>
+
+    <p class="footer-link">Don't have an account? <a routerLink="/register">Sign up</a></p>
+  </div>
+</div>

@@ -1,0 +1,90 @@
+<div class="layout">
+  <nav class="sidebar">
+    <div class="brand">Analytics</div>
+    <a routerLink="/dashboard" class="nav-item">Dashboard</a>
+    <a routerLink="/subscription" class="nav-item">Subscription</a>
+    <a routerLink="/imports" class="nav-item">Imports</a>
+    @if (auth.isAdmin()) {
+      <a routerLink="/organizations" class="nav-item">Organizations</a>
+    }
+    <a routerLink="/analytics" class="nav-item">Analytics</a>
+    @if (auth.isOrgAdmin()) {
+      <a routerLink="/stores" class="nav-item">Stores</a>
+    }
+    @if (auth.isAdmin()) {
+      <a routerLink="/admin" class="nav-item">Admin</a>
+    }
+    <a routerLink="/profile" class="nav-item active user-link">
+      <span class="user-avatar">{{ auth.user()?.fullName?.charAt(0)?.toUpperCase() }}</span>
+      {{ auth.user()?.fullName }}
+    </a>
+    <button class="nav-item logout" (click)="logout()">Logout</button>
+  </nav>
+
+  <main class="content">
+    <h1>My Profile</h1>
+
+    @if (loading()) {
+      <div class="loading">Loading…</div>
+    } @else if (profile()) {
+
+      <!-- Identity card -->
+      <div class="profile-card">
+        <div class="avatar-row">
+          <div class="avatar">{{ profile()!.fullName.charAt(0).toUpperCase() }}</div>
+          <div class="identity">
+            <div class="name">{{ profile()!.fullName }}</div>
+            <div class="email">{{ profile()!.email }}</div>
+            <div class="since">Member since {{ profile()!.createdAt | date:'mediumDate' }}</div>
+          </div>
+          <div class="level-chip" [attr.data-level]="profile()!.level">
+            {{ profile()!.level }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Permissions -->
+      <div class="section-title">Permissions</div>
+      <div class="perm-grid">
+        @for (group of permissionGroups(); track group.title) {
+          <div class="perm-group">
+            <div class="perm-group-title">{{ group.title }}</div>
+            @for (item of group.items; track item.label) {
+              <div class="perm-row" [class.granted]="item.granted" [class.denied]="!item.granted">
+                <span class="perm-icon">{{ item.granted ? '✓' : '✗' }}</span>
+                <div class="perm-text">
+                  <span class="perm-label">{{ item.label }}</span>
+                  <span class="perm-desc">{{ item.description }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Edit form -->
+      <form class="form-card" (ngSubmit)="save()">
+        <h2>Edit Profile</h2>
+
+        @if (saved()) {
+          <div class="success">Profile saved successfully.</div>
+        }
+
+        <div class="form-row">
+          <label>Full Name
+            <input type="text" [(ngModel)]="fullName" name="fullName" required />
+          </label>
+          <label>Email
+            <input type="email" [value]="profile()!.email" disabled />
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" [disabled]="saving()">
+            {{ saving() ? 'Saving…' : 'Save changes' }}
+          </button>
+        </div>
+      </form>
+    }
+  </main>
+</div>

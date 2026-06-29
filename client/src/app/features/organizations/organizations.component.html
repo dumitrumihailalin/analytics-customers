@@ -1,0 +1,125 @@
+<div class="layout">
+  <nav class="sidebar">
+    <div class="brand">Analytics</div>
+    <a routerLink="/dashboard" class="nav-item">Dashboard</a>
+    <a routerLink="/subscription" class="nav-item">Subscription</a>
+    <a routerLink="/imports" class="nav-item">Imports</a>
+    <a routerLink="/organizations" class="nav-item active">Organizations</a>
+    <a routerLink="/analytics" class="nav-item">Analytics</a>
+    <a routerLink="/stores" class="nav-item">Stores</a>
+    <a routerLink="/admin" class="nav-item">Admin</a>
+    <a routerLink="/profile" class="nav-item user-link">
+      <span class="user-avatar">{{ auth.user()?.fullName?.charAt(0)?.toUpperCase() }}</span>
+      {{ auth.user()?.fullName }}
+    </a>
+    <button class="nav-item logout" (click)="logout()">Logout</button>
+  </nav>
+
+  <main class="content">
+    <div class="page-header">
+      <h1>Organizations</h1>
+      <button class="btn-primary" (click)="openCreate()">+ New Organization</button>
+    </div>
+
+    @if (errorMsg()) {
+      <div class="alert-error">{{ errorMsg() }}</div>
+    }
+
+    <!-- Create / Edit modal -->
+    @if (showForm()) {
+      <div class="modal-backdrop" (click)="closeForm()">
+        <div class="modal" (click)="$event.stopPropagation()">
+          <h2>{{ editingId() ? 'Edit Organization' : 'New Organization' }}</h2>
+
+          @if (formError()) {
+            <div class="alert-error modal-error">{{ formError() }}</div>
+          }
+
+          <form (ngSubmit)="save()">
+            <label>Name *
+              <input type="text" [(ngModel)]="formName" name="name" required autofocus placeholder="Nume organizatie" />
+            </label>
+            <label>Country
+              <input type="text" [(ngModel)]="formCountry" name="country" placeholder="e.g. Romania" />
+            </label>
+            <div class="modal-actions">
+              <button type="button" class="btn-cancel" (click)="closeForm()">Anulare</button>
+              <button type="submit" class="btn-primary" [disabled]="saving() || !formName.trim()">
+                {{ saving() ? 'Se salvează…' : (editingId() ? 'Actualizează' : 'Creează') }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="loading">Se încarcă…</div>
+    } @else {
+      <section class="section">
+        <div class="table-toolbar">
+          <input
+            class="search-input"
+            type="search"
+            [(ngModel)]="search"
+            placeholder="Caută după nume sau țară…"
+          />
+          <span class="count">{{ filtered().length }} organizat{{ filtered().length === 1 ? 'ie' : 'ii' }}</span>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Nume</th>
+              <th>Țară</th>
+              <th>Utilizatori</th>
+              <th>Magazine</th>
+              <th>Status</th>
+              <th>Creat la</th>
+              <th>Acțiuni</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (org of filtered(); track org.id) {
+              <tr [class.inactive-row]="!org.isActive">
+                <td class="org-name">{{ org.name }}</td>
+                <td>{{ org.country ?? '—' }}</td>
+                <td>
+                  <span class="count-pill">{{ org.userCount }}</span>
+                </td>
+                <td>
+                  <span class="count-pill">{{ org.storeCount }}</span>
+                </td>
+                <td>
+                  <span class="badge" [class.active]="org.isActive" [class.inactive]="!org.isActive">
+                    {{ org.isActive ? 'Activ' : 'Inactiv' }}
+                  </span>
+                </td>
+                <td class="date-cell">{{ org.createdAt | date:'dd MMM yyyy' }}</td>
+                <td class="actions">
+                  <button class="btn-sm" (click)="openEdit(org)" title="Editează">Edit</button>
+                  <button
+                    class="btn-sm"
+                    [class.btn-warn]="org.isActive"
+                    (click)="toggleActive(org)"
+                    title="{{ org.isActive ? 'Dezactivează' : 'Activează' }}"
+                  >
+                    {{ org.isActive ? 'Dezactivează' : 'Activează' }}
+                  </button>
+                  <button class="btn-sm btn-danger" (click)="delete(org)" title="Șterge">Șterge</button>
+                </td>
+              </tr>
+            }
+            @empty {
+              <tr>
+                <td colspan="7" class="empty">
+                  {{ search ? 'Nicio organizație găsită.' : 'Nicio organizație creată.' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    }
+  </main>
+</div>

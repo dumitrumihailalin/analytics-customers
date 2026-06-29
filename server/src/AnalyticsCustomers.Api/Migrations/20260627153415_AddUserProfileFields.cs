@@ -1,0 +1,48 @@
+﻿using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace AnalyticsCustomers.Api.Migrations
+{
+    /// <inheritdoc />
+    public partial class AddUserProfileFields : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.AddColumn<string>(
+                name: "CompanyName",
+                table: "Users",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "PhoneNumber",
+                table: "Users",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "Website",
+                table: "Users",
+                type: "text",
+                nullable: true);
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "CompanyName",
+                table: "Users");
+
+            migrationBuilder.DropColumn(
+                name: "PhoneNumber",
+                table: "Users");
+
+            migrationBuilder.DropColumn(
+                name: "Website",
+                table: "Users");
+        }
+    }
+}
