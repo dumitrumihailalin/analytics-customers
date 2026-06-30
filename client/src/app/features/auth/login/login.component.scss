@@ -34,6 +34,29 @@
     &:focus { outline: none; border-color: #6c63ff; }
   }
 
+  .password-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    input { width: 100%; padding-right: 2.5rem; }
+
+    .eye-btn {
+      position: absolute;
+      right: .5rem;
+      width: auto;
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      font-size: 1rem;
+      cursor: pointer;
+      color: #888;
+      line-height: 1;
+      &:hover { color: #333; }
+    }
+  }
+
   button {
     width: 100%;
     padding: .75rem;

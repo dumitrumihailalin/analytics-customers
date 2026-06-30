@@ -4,13 +4,9 @@
     <a routerLink="/dashboard" class="nav-item">Dashboard</a>
     <a routerLink="/subscription" class="nav-item">Subscription</a>
     <a routerLink="/imports" class="nav-item active">Imports</a>
-    @if (auth.isAdmin()) {
-      <a routerLink="/organizations" class="nav-item">Organizations</a>
-    }
+    <a routerLink="/organizations" class="nav-item">Organizations</a>
     <a routerLink="/analytics" class="nav-item">Analytics</a>
-    @if (auth.isOrgAdmin()) {
-      <a routerLink="/stores" class="nav-item">Stores</a>
-    }
+    <a routerLink="/stores" class="nav-item">Stores</a>
     @if (auth.isAdmin()) {
       <a routerLink="/admin" class="nav-item">Admin</a>
     }
@@ -36,9 +32,9 @@
       </div>
     }
 
-    <!-- Endpoint table -->
+    <!-- Endpoints table -->
     <section class="section">
-      <h2>Endpoint</h2>
+      <h2>Endpoints</h2>
       <table class="endpoint-table">
         <thead>
           <tr><th>Method</th><th>URL</th><th>Auth</th><th>Description</th></tr>
@@ -47,21 +43,32 @@
           <tr>
             <td><span class="method-badge post">POST</span></td>
             <td>
-              <code>{{ endpoint.url }}</code>
-              <button class="icon-btn" (click)="copy(endpoint.url, 'url')" title="Copy URL">
+              <code>{{ singleEndpoint.url }}</code>
+              <button class="icon-btn" (click)="copy(singleEndpoint.url, 'url')" title="Copy URL">
                 {{ copiedField() === 'url' ? '✓' : '⎘' }}
               </button>
             </td>
             <td><span class="auth-badge">API Key</span></td>
-            <td>{{ endpoint.description }}</td>
+            <td>{{ singleEndpoint.description }}</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge post">POST</span></td>
+            <td>
+              <code>{{ bulkEndpoint.url }}</code>
+              <button class="icon-btn" (click)="copy(bulkEndpoint.url, 'bulk-url')" title="Copy URL">
+                {{ copiedField() === 'bulk-url' ? '✓' : '⎘' }}
+              </button>
+            </td>
+            <td><span class="auth-badge">API Key</span></td>
+            <td>{{ bulkEndpoint.description }}</td>
           </tr>
         </tbody>
       </table>
     </section>
 
-    <!-- Payload reference -->
+    <!-- Payload fields -->
     <section class="section">
-      <h2>Payload Fields</h2>
+      <h2>Payload Fields — Single Record</h2>
       <table class="fields-table">
         <thead>
           <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
@@ -71,45 +78,60 @@
             <td><code>apiKey</code></td>
             <td>string</td>
             <td><span class="req">Yes</span></td>
-            <td>Your subscription API key</td>
+            <td>Your store API key — also determines which store the record belongs to</td>
           </tr>
           <tr>
             <td><code>productId</code></td>
             <td>string</td>
             <td><span class="req">Yes</span></td>
-            <td>Unique identifier for the product</td>
-          </tr>
-          <tr>
-            <td><code>categoryId</code></td>
-            <td>string</td>
-            <td><span class="req">Yes</span></td>
-            <td>Product category name or ID</td>
+            <td>Unique identifier for the product (maps to <code>ProductId</code> in Analytics)</td>
           </tr>
           <tr>
             <td><code>price</code></td>
-            <td>number</td>
+            <td>number (2 dec.)</td>
             <td><span class="req">Yes</span></td>
-            <td>Unit price of the product</td>
+            <td>Unit price of the product (maps to <code>Price</code>)</td>
           </tr>
           <tr>
             <td><code>quantitySold</code></td>
             <td>integer</td>
             <td><span class="req">Yes</span></td>
-            <td>Number of units sold</td>
+            <td>Number of units sold in this record (maps to <code>QuantitySold</code>)</td>
           </tr>
           <tr>
             <td><code>stock</code></td>
             <td>integer</td>
             <td><span class="req">Yes</span></td>
-            <td>Current stock remaining</td>
+            <td>Current stock remaining (maps to <code>Stock</code>)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 style="margin-top:1.5rem">Payload Fields — Bulk</h2>
+      <table class="fields-table">
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>apiKey</code></td>
+            <td>string</td>
+            <td><span class="req">Yes</span></td>
+            <td>Your store API key</td>
+          </tr>
+          <tr>
+            <td><code>items</code></td>
+            <td>array</td>
+            <td><span class="req">Yes</span></td>
+            <td>List of records — each with <code>productId</code>, <code>price</code>, <code>quantitySold</code>, <code>stock</code></td>
           </tr>
         </tbody>
       </table>
     </section>
 
-    <!-- Code example -->
+    <!-- Code examples -->
     <section class="section">
-      <h2>Example Request</h2>
+      <h2>Example — Single Record</h2>
       <div class="code-block">
         <div class="code-header">
           <span>JSON Payload</span>
@@ -122,9 +144,27 @@
 
       <div class="code-block">
         <div class="code-header"><span>cURL</span></div>
-        <pre><code>curl -X POST {{ endpoint.url }} \
+        <pre><code>curl -X POST {{ singleEndpoint.url }} \
   -H "Content-Type: application/json" \
   -d '{{ payloadExample }}'</code></pre>
+      </div>
+
+      <h2 style="margin-top:1.5rem">Example — Bulk</h2>
+      <div class="code-block">
+        <div class="code-header">
+          <span>JSON Payload</span>
+          <button class="copy-btn" (click)="copy(bulkPayloadExample, 'bulk-payload')">
+            {{ copiedField() === 'bulk-payload' ? '✓ Copied' : 'Copy' }}
+          </button>
+        </div>
+        <pre><code>{{ bulkPayloadExample }}</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span>cURL</span></div>
+        <pre><code>curl -X POST {{ bulkEndpoint.url }} \
+  -H "Content-Type: application/json" \
+  -d '{{ bulkPayloadExample }}'</code></pre>
       </div>
     </section>
 
@@ -134,9 +174,16 @@
       <table class="fields-table">
         <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
         <tbody>
-          <tr><td><span class="status ok">200</span></td><td>Data ingested successfully — returns the created record with <code>id</code>, <code>weekNumber</code>, <code>amount</code></td></tr>
+          <tr>
+            <td><span class="status ok">200</span></td>
+            <td>
+              Single: returns <code>&#123; id, storeId, createdAt &#125;</code><br>
+              Bulk: returns <code>&#123; accepted, receivedAt, ids[] &#125;</code>
+            </td>
+          </tr>
+          <tr><td><span class="status err">400</span></td><td>Key not linked to a store, or items list is empty</td></tr>
           <tr><td><span class="status err">401</span></td><td>Invalid or inactive API key</td></tr>
-          <tr><td><span class="status err">403</span></td><td>Subscription key expired</td></tr>
+          <tr><td><span class="status err">403</span></td><td>API key has expired</td></tr>
         </tbody>
       </table>
     </section>

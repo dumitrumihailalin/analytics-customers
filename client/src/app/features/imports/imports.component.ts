@@ -23,13 +23,20 @@ export class ImportsComponent implements OnInit {
   copiedField = signal<string | null>(null);
   baseUrl = environment.apiUrl.replace('/api', '');
 
-  endpoint: EndpointRow = {
+  singleEndpoint: EndpointRow = {
     method: 'POST',
-    url: `${this.baseUrl}/api/ingest`,
-    description: 'Submit product sales data — no JWT required, authenticated via apiKey in the payload.'
+    url: `${this.baseUrl}/api/ingest/analytics`,
+    description: 'Ingest a single analytics record — authenticated via apiKey in the payload.'
+  };
+
+  bulkEndpoint: EndpointRow = {
+    method: 'POST',
+    url: `${this.baseUrl}/api/ingest/analytics/bulk`,
+    description: 'Ingest multiple records in one request.'
   };
 
   payloadExample = '';
+  bulkPayloadExample = '';
 
   constructor(
     private subService: SubscriptionService,
@@ -39,18 +46,25 @@ export class ImportsComponent implements OnInit {
   ngOnInit() {
     this.subService.getInfo().subscribe(info => {
       this.apiKey.set(info.key);
-      this.updatePayloadExample(info.key ?? 'YOUR_API_KEY');
+      this.updatePayloadExamples(info.key ?? 'YOUR_API_KEY');
     });
   }
 
-  private updatePayloadExample(key: string) {
+  private updatePayloadExamples(key: string) {
     this.payloadExample = JSON.stringify({
       apiKey: key,
       productId: 'PROD-001',
-      categoryId: 'Electronics',
       price: 49.99,
       quantitySold: 3,
       stock: 120
+    }, null, 2);
+
+    this.bulkPayloadExample = JSON.stringify({
+      apiKey: key,
+      items: [
+        { productId: 'PROD-001', price: 49.99, quantitySold: 3, stock: 120 },
+        { productId: 'PROD-002', price: 19.99, quantitySold: 10, stock: 45 }
+      ]
     }, null, 2);
   }
 

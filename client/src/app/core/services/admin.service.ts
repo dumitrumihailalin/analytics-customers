@@ -12,6 +12,10 @@ export class AdminService {
     return this.http.get<any[]>(`${this.api}/admin/users`);
   }
 
+  createUser(req: { fullName: string; email: string; password: string }) {
+    return this.http.post<any>(`${this.api}/admin/users`, req);
+  }
+
   toggleActive(id: string) {
     return this.http.patch(`${this.api}/admin/users/${id}/toggle-active`, {});
   }

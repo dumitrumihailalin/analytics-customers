@@ -13,22 +13,28 @@ namespace AnalyticsCustomers.Api.Controllers;
 [Authorize]
 public class StoresController(AppDbContext db) : ControllerBase
 {
+    private Guid CurrentUserId =>
+        Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    private bool IsPlatformAdmin =>
+        User.FindFirstValue(ClaimTypes.Role) == "PlatformAdmin";
+
+    // GET /api/stores
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] Guid? organizationId)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var level = User.FindFirstValue(ClaimTypes.Role) ?? "User";
+        IQueryable<Store> query = db.Stores
+            .Include(s => s.Organization)
+            .Include(s => s.ApiKeys);
 
-        IQueryable<Store> query = db.Stores.Include(s => s.Organization).Include(s => s.ApiKeys);
-
-        if (level == "PlatformAdmin")
+        if (IsPlatformAdmin)
         {
             if (organizationId.HasValue)
                 query = query.Where(s => s.OrganizationId == organizationId.Value);
         }
         else
         {
-            var user = await db.Users.FindAsync(userId);
+            var user = await db.Users.FindAsync(CurrentUserId);
             if (user?.OrganizationId is null) return Ok(Array.Empty<StoreResponse>());
             query = query.Where(s => s.OrganizationId == user.OrganizationId);
         }
@@ -44,12 +50,10 @@ public class StoresController(AppDbContext db) : ControllerBase
         return Ok(stores);
     }
 
+    // GET /api/stores/{id}
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var level = User.FindFirstValue(ClaimTypes.Role) ?? "User";
-
         var store = await db.Stores
             .Include(s => s.Organization)
             .Include(s => s.ApiKeys)
@@ -57,9 +61,9 @@ public class StoresController(AppDbContext db) : ControllerBase
 
         if (store is null) return NotFound();
 
-        if (level != "PlatformAdmin")
+        if (!IsPlatformAdmin)
         {
-            var user = await db.Users.FindAsync(userId);
+            var user = await db.Users.FindAsync(CurrentUserId);
             if (user?.OrganizationId != store.OrganizationId) return Forbid();
         }
 
@@ -69,51 +73,58 @@ public class StoresController(AppDbContext db) : ControllerBase
             store.CreatedAt, store.ApiKeys.Count));
     }
 
+    // POST /api/stores
     [HttpPost]
-    [Authorize(Roles = "PlatformAdmin,OrgAdmin")]
     public async Task<IActionResult> Create([FromBody] CreateStoreRequest req)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var level = User.FindFirstValue(ClaimTypes.Role) ?? "User";
+        Guid orgId;
 
-        if (level != "PlatformAdmin")
+        if (IsPlatformAdmin)
         {
-            var user = await db.Users.FindAsync(userId);
-            if (user?.OrganizationId != req.OrganizationId) return Forbid();
+            var org = await db.Organizations.FindAsync(req.OrganizationId);
+            if (org is null) return BadRequest(new { error = "Organization not found." });
+            orgId = req.OrganizationId;
         }
-
-        var org = await db.Organizations.FindAsync(req.OrganizationId);
-        if (org is null) return BadRequest(new { error = "Organization not found." });
+        else
+        {
+            var user = await db.Users.FindAsync(CurrentUserId);
+            if (user?.OrganizationId is null)
+                return BadRequest(new { error = "You are not assigned to an organization." });
+            orgId = user.OrganizationId.Value;
+        }
 
         var store = new Store
         {
-            OrganizationId = req.OrganizationId,
+            OrganizationId = orgId,
             StoreName = req.StoreName,
             Street = req.Street,
             Country = req.Country,
             Website = req.Website
         };
+
         db.Stores.Add(store);
         await db.SaveChangesAsync();
 
+        await db.Entry(store).Reference(s => s.Organization).LoadAsync();
+
         return CreatedAtAction(nameof(GetById), new { id = store.Id },
-            new StoreResponse(store.Id, store.OrganizationId, org.Name,
+            new StoreResponse(store.Id, store.OrganizationId, store.Organization.Name,
                 store.StoreName, store.Street, store.Country, store.Website, store.CreatedAt, 0));
     }
 
+    // PUT /api/stores/{id}
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "PlatformAdmin,OrgAdmin")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateStoreRequest req)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var level = User.FindFirstValue(ClaimTypes.Role) ?? "User";
+        var store = await db.Stores
+            .Include(s => s.Organization)
+            .FirstOrDefaultAsync(s => s.Id == id);
 
-        var store = await db.Stores.Include(s => s.Organization).FirstOrDefaultAsync(s => s.Id == id);
         if (store is null) return NotFound();
 
-        if (level != "PlatformAdmin")
+        if (!IsPlatformAdmin)
         {
-            var user = await db.Users.FindAsync(userId);
+            var user = await db.Users.FindAsync(CurrentUserId);
             if (user?.OrganizationId != store.OrganizationId) return Forbid();
         }
 
@@ -128,19 +139,16 @@ public class StoresController(AppDbContext db) : ControllerBase
             store.StoreName, store.Street, store.Country, store.Website, store.CreatedAt, 0));
     }
 
+    // DELETE /api/stores/{id}
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "PlatformAdmin,OrgAdmin")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var level = User.FindFirstValue(ClaimTypes.Role) ?? "User";
-
         var store = await db.Stores.FindAsync(id);
         if (store is null) return NotFound();
 
-        if (level != "PlatformAdmin")
+        if (!IsPlatformAdmin)
         {
-            var user = await db.Users.FindAsync(userId);
+            var user = await db.Users.FindAsync(CurrentUserId);
             if (user?.OrganizationId != store.OrganizationId) return Forbid();
         }
 

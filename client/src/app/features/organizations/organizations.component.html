@@ -7,7 +7,9 @@
     <a routerLink="/organizations" class="nav-item active">Organizations</a>
     <a routerLink="/analytics" class="nav-item">Analytics</a>
     <a routerLink="/stores" class="nav-item">Stores</a>
-    <a routerLink="/admin" class="nav-item">Admin</a>
+    @if (auth.isAdmin()) {
+      <a routerLink="/admin" class="nav-item">Admin</a>
+    }
     <a routerLink="/profile" class="nav-item user-link">
       <span class="user-avatar">{{ auth.user()?.fullName?.charAt(0)?.toUpperCase() }}</span>
       {{ auth.user()?.fullName }}
@@ -16,53 +18,60 @@
   </nav>
 
   <main class="content">
-    <div class="page-header">
-      <h1>Organizations</h1>
-      <button class="btn-primary" (click)="openCreate()">+ New Organization</button>
-    </div>
-
-    @if (errorMsg()) {
-      <div class="alert-error">{{ errorMsg() }}</div>
-    }
-
-    <!-- Create / Edit modal -->
-    @if (showForm()) {
-      <div class="modal-backdrop" (click)="closeForm()">
-        <div class="modal" (click)="$event.stopPropagation()">
-          <h2>{{ editingId() ? 'Edit Organization' : 'New Organization' }}</h2>
-
-          @if (formError()) {
-            <div class="alert-error modal-error">{{ formError() }}</div>
-          }
-
-          <form (ngSubmit)="save()">
-            <label>Name *
-              <input type="text" [(ngModel)]="formName" name="name" required autofocus placeholder="Nume organizatie" />
-            </label>
-            <label>Country
-              <input type="text" [(ngModel)]="formCountry" name="country" placeholder="e.g. Romania" />
-            </label>
-            <div class="modal-actions">
-              <button type="button" class="btn-cancel" (click)="closeForm()">Anulare</button>
-              <button type="submit" class="btn-primary" [disabled]="saving() || !formName.trim()">
-                {{ saving() ? 'Se salvează…' : (editingId() ? 'Actualizează' : 'Creează') }}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    }
-
     @if (loading()) {
       <div class="loading">Se încarcă…</div>
-    } @else {
+    } @else if (auth.isAdmin()) {
+
+      <!-- ── ADMIN VIEW: full CRUD table ── -->
+      <div class="page-header">
+        <h1>Organizations</h1>
+        <button class="btn-primary" (click)="openCreate()">+ New Organization</button>
+      </div>
+
+      @if (errorMsg()) {
+        <div class="alert-error">{{ errorMsg() }}</div>
+      }
+
+      @if (showForm()) {
+        <div class="modal-backdrop" (click)="closeForm()">
+          <div class="modal" (click)="$event.stopPropagation()">
+            <h2>{{ editingId() ? 'Edit Organization' : 'New Organization' }}</h2>
+
+            @if (formError()) {
+              <div class="alert-error modal-error">{{ formError() }}</div>
+            }
+
+            <form (ngSubmit)="save()">
+              <label>Name *
+                <input type="text" [(ngModel)]="formName" name="name" required autofocus placeholder="Nume organizatie" />
+              </label>
+              <label>Country
+                <input type="text" [(ngModel)]="formCountry" name="country" placeholder="e.g. Romania" />
+              </label>
+              <label>Address
+                <input type="text" [(ngModel)]="formAddress" name="address" placeholder="Strada, Oraș, Județ" />
+              </label>
+              <label>Website
+                <input type="url" [(ngModel)]="formWebSite" name="webSite" placeholder="https://example.com" />
+              </label>
+              <div class="modal-actions">
+                <button type="button" class="btn-cancel" (click)="closeForm()">Anulare</button>
+                <button type="submit" class="btn-primary" [disabled]="saving() || !formName.trim()">
+                  {{ saving() ? 'Se salvează…' : (editingId() ? 'Actualizează' : 'Creează') }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+
       <section class="section">
         <div class="table-toolbar">
           <input
             class="search-input"
             type="search"
             [(ngModel)]="search"
-            placeholder="Caută după nume sau țară…"
+            placeholder="Caută după nume, țară sau adresă…"
           />
           <span class="count">{{ filtered().length }} organizat{{ filtered().length === 1 ? 'ie' : 'ii' }}</span>
         </div>
@@ -72,6 +81,8 @@
             <tr>
               <th>Nume</th>
               <th>Țară</th>
+              <th>Adresă</th>
+              <th>Website</th>
               <th>Utilizatori</th>
               <th>Magazine</th>
               <th>Status</th>
@@ -84,12 +95,16 @@
               <tr [class.inactive-row]="!org.isActive">
                 <td class="org-name">{{ org.name }}</td>
                 <td>{{ org.country ?? '—' }}</td>
+                <td class="text-muted">{{ org.address ?? '—' }}</td>
                 <td>
-                  <span class="count-pill">{{ org.userCount }}</span>
+                  @if (org.webSite) {
+                    <a [href]="org.webSite" target="_blank" rel="noopener" class="link">{{ org.webSite }}</a>
+                  } @else {
+                    <span>—</span>
+                  }
                 </td>
-                <td>
-                  <span class="count-pill">{{ org.storeCount }}</span>
-                </td>
+                <td><span class="count-pill">{{ org.userCount }}</span></td>
+                <td><span class="count-pill">{{ org.storeCount }}</span></td>
                 <td>
                   <span class="badge" [class.active]="org.isActive" [class.inactive]="!org.isActive">
                     {{ org.isActive ? 'Activ' : 'Inactiv' }}
@@ -97,22 +112,17 @@
                 </td>
                 <td class="date-cell">{{ org.createdAt | date:'dd MMM yyyy' }}</td>
                 <td class="actions">
-                  <button class="btn-sm" (click)="openEdit(org)" title="Editează">Edit</button>
-                  <button
-                    class="btn-sm"
-                    [class.btn-warn]="org.isActive"
-                    (click)="toggleActive(org)"
-                    title="{{ org.isActive ? 'Dezactivează' : 'Activează' }}"
-                  >
+                  <button class="btn-sm" (click)="openEdit(org)">Edit</button>
+                  <button class="btn-sm" [class.btn-warn]="org.isActive" (click)="toggleActive(org)">
                     {{ org.isActive ? 'Dezactivează' : 'Activează' }}
                   </button>
-                  <button class="btn-sm btn-danger" (click)="delete(org)" title="Șterge">Șterge</button>
+                  <button class="btn-sm btn-danger" (click)="delete(org)">Șterge</button>
                 </td>
               </tr>
             }
             @empty {
               <tr>
-                <td colspan="7" class="empty">
+                <td colspan="9" class="empty">
                   {{ search ? 'Nicio organizație găsită.' : 'Nicio organizație creată.' }}
                 </td>
               </tr>
@@ -120,6 +130,101 @@
           </tbody>
         </table>
       </section>
+
+    } @else {
+
+      <!-- ── USER VIEW: own organization ── -->
+      <div class="page-header">
+        <h1>My Organization</h1>
+        @if (myOrg()) {
+          <button class="btn-primary" (click)="openEdit(myOrg()!)">Edit</button>
+        }
+      </div>
+
+      @if (showForm()) {
+        <div class="modal-backdrop" (click)="closeForm()">
+          <div class="modal" (click)="$event.stopPropagation()">
+            <h2>Edit Organization</h2>
+
+            @if (formError()) {
+              <div class="alert-error modal-error">{{ formError() }}</div>
+            }
+
+            <form (ngSubmit)="save()">
+              <label>Name *
+                <input type="text" [(ngModel)]="formName" name="name" required autofocus placeholder="Nume organizatie" />
+              </label>
+              <label>Country
+                <input type="text" [(ngModel)]="formCountry" name="country" placeholder="e.g. Romania" />
+              </label>
+              <label>Address
+                <input type="text" [(ngModel)]="formAddress" name="address" placeholder="Strada, Oraș, Județ" />
+              </label>
+              <label>Website
+                <input type="url" [(ngModel)]="formWebSite" name="webSite" placeholder="https://example.com" />
+              </label>
+              <div class="modal-actions">
+                <button type="button" class="btn-cancel" (click)="closeForm()">Anulare</button>
+                <button type="submit" class="btn-primary" [disabled]="saving() || !formName.trim()">
+                  {{ saving() ? 'Se salvează…' : 'Actualizează' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+
+      @if (myOrg()) {
+        <section class="section org-card">
+          <div class="org-detail-header">
+            <div class="org-avatar">{{ myOrg()!.name.charAt(0).toUpperCase() }}</div>
+            <div>
+              <h2 class="org-title">{{ myOrg()!.name }}</h2>
+              <span class="badge" [class.active]="myOrg()!.isActive" [class.inactive]="!myOrg()!.isActive">
+                {{ myOrg()!.isActive ? 'Activ' : 'Inactiv' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="org-fields">
+            <div class="org-field">
+              <span class="field-label">Țară</span>
+              <span class="field-value">{{ myOrg()!.country ?? '—' }}</span>
+            </div>
+            <div class="org-field">
+              <span class="field-label">Adresă</span>
+              <span class="field-value">{{ myOrg()!.address ?? '—' }}</span>
+            </div>
+            <div class="org-field">
+              <span class="field-label">Website</span>
+              <span class="field-value">
+                @if (myOrg()!.webSite) {
+                  <a [href]="myOrg()!.webSite!" target="_blank" rel="noopener" class="link">{{ myOrg()!.webSite }}</a>
+                } @else {
+                  —
+                }
+              </span>
+            </div>
+            <div class="org-field">
+              <span class="field-label">Utilizatori</span>
+              <span class="field-value"><span class="count-pill">{{ myOrg()!.userCount }}</span></span>
+            </div>
+            <div class="org-field">
+              <span class="field-label">Magazine</span>
+              <span class="field-value"><span class="count-pill">{{ myOrg()!.storeCount }}</span></span>
+            </div>
+            <div class="org-field">
+              <span class="field-label">Creat la</span>
+              <span class="field-value">{{ myOrg()!.createdAt | date:'dd MMMM yyyy' }}</span>
+            </div>
+          </div>
+        </section>
+      } @else {
+        <div class="empty-state">
+          <p>Nu ești asociat cu nicio organizație.</p>
+          <p class="text-muted">Contactează un administrator pentru a fi adăugat.</p>
+        </div>
+      }
     }
   </main>
 </div>

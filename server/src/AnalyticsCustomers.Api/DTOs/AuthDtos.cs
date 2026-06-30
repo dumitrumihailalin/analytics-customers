@@ -19,3 +19,5 @@ public record ProfileResponse(
     string Level,
     DateTime CreatedAt
 );
+
+public record CreateAdminUserRequest(string FullName, string Email, string Password);

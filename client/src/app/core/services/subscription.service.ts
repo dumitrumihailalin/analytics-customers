@@ -17,9 +17,15 @@ export class SubscriptionService {
     return this.http.get<SubscriptionKey[]>(`${this.api}/subscription/key/history`);
   }
 
-  generateKey() {
-    return this.http.post<{ id: string; key: string; issuedAt: string; expiresAt: string; isActive: boolean; organizationId: string | null }>(
-      `${this.api}/subscription/key/generate`, {}
+  generateKey(storeId?: string) {
+    return this.http.post<{ id: string; key: string; issuedAt: string; expiresAt: string; isActive: boolean; storeId: string | null; organizationId: string | null }>(
+      `${this.api}/subscription/key/generate`, storeId ? { storeId } : {}
+    );
+  }
+
+  assignStore(storeId: string) {
+    return this.http.patch<{ id: string; key: string; storeId: string }>(
+      `${this.api}/subscription/key/assign-store`, { storeId }
     );
   }
 }

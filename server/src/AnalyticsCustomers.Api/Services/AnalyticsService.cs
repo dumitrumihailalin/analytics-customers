@@ -24,11 +24,11 @@ public class AnalyticsService(AppDbContext db)
             return new DashboardSummaryDto(0, 0, 0, 0, [], [], []);
 
         var records = await db.Analytics
-            .Where(a => storeIds.Contains(a.StoreId) && a.RecordedAt.Year == targetYear)
+            .Where(a => storeIds.Contains(a.StoreId) && a.CreatedAt.Year == targetYear)
             .ToListAsync();
 
         var weekly = records
-            .GroupBy(a => new { Week = ISOWeek.GetWeekOfYear(a.RecordedAt), a.RecordedAt.Year })
+            .GroupBy(a => new { Week = ISOWeek.GetWeekOfYear(a.CreatedAt), a.CreatedAt.Year })
             .Select(g => new WeeklyRevenueDto(
                 g.Key.Week, g.Key.Year,
                 g.Sum(a => a.Price * a.QuantitySold),
@@ -38,7 +38,7 @@ public class AnalyticsService(AppDbContext db)
             .ToList();
 
         var monthly = records
-            .GroupBy(a => new { a.RecordedAt.Month, a.RecordedAt.Year })
+            .GroupBy(a => new { a.CreatedAt.Month, a.CreatedAt.Year })
             .Select(g => new MonthlyRevenueDto(
                 g.Key.Month, g.Key.Year,
                 g.Sum(a => a.Price * a.QuantitySold),
@@ -47,14 +47,14 @@ public class AnalyticsService(AppDbContext db)
             .OrderBy(m => m.Month)
             .ToList();
 
-        var categories = records
-            .GroupBy(a => a.CategoryId)
-            .Select(g => new CategoryBreakdownDto(
+        var products = records
+            .GroupBy(a => a.ProductId)
+            .Select(g => new ProductBreakdownDto(
                 g.Key,
                 g.Sum(a => a.Price * a.QuantitySold),
                 g.Count(),
                 g.Sum(a => a.QuantitySold)))
-            .OrderByDescending(c => c.TotalRevenue)
+            .OrderByDescending(p => p.TotalRevenue)
             .ToList();
 
         var totalRevenue = records.Sum(a => a.Price * a.QuantitySold);
@@ -68,7 +68,7 @@ public class AnalyticsService(AppDbContext db)
             count > 0 ? Math.Round(totalRevenue / count, 2) : 0,
             weekly,
             monthly,
-            categories);
+            products);
     }
 
     public async Task<AdminStatsDto> GetAdminStatsAsync()

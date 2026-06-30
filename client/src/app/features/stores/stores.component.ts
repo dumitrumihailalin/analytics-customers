@@ -1,40 +1,38 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { StoreService } from '../../core/services/store.service';
 import { OrganizationService } from '../../core/services/organization.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Store } from '../../core/models/store.models';
-import { ApiKey, GeneratedApiKey } from '../../core/models/apikey.models';
 import { Organization } from '../../core/models/organization.models';
 
 @Component({
   selector: 'app-stores',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './stores.component.html',
   styleUrl: './stores.component.scss'
 })
 export class StoresComponent implements OnInit {
   stores = signal<Store[]>([]);
   organizations = signal<Organization[]>([]);
+  myOrgId = signal<string | null>(null);
+  copiedId = signal<string | null>(null);
   loading = signal(true);
+  errorMsg = signal<string | null>(null);
 
   showStoreForm = signal(false);
   editingId = signal<string | null>(null);
   saving = signal(false);
+  formError = signal<string | null>(null);
 
   formOrgId = '';
   formName = '';
   formStreet = '';
   formCountry = '';
   formWebsite = '';
-
-  expandedStoreId = signal<string | null>(null);
-  storeKeys = signal<ApiKey[]>([]);
-  keysLoading = signal(false);
-  generatedKey = signal<GeneratedApiKey | null>(null);
 
   constructor(
     private storeService: StoreService,
@@ -47,17 +45,26 @@ export class StoresComponent implements OnInit {
       this.stores.set(s);
       this.loading.set(false);
     });
+
     if (this.auth.isAdmin()) {
       this.orgService.getAll().subscribe(o => this.organizations.set(o));
+    } else {
+      this.orgService.getMine().subscribe({
+        next: org => this.myOrgId.set(org.id),
+        error: () => {}
+      });
     }
   }
 
   openCreate() {
-    this.formOrgId = this.organizations()[0]?.id ?? '';
+    this.formOrgId = this.auth.isAdmin()
+      ? (this.organizations()[0]?.id ?? '')
+      : (this.myOrgId() ?? '');
     this.formName = '';
     this.formStreet = '';
     this.formCountry = '';
     this.formWebsite = '';
+    this.formError.set(null);
     this.editingId.set(null);
     this.showStoreForm.set(true);
   }
@@ -68,6 +75,7 @@ export class StoresComponent implements OnInit {
     this.formStreet = store.street ?? '';
     this.formCountry = store.country ?? '';
     this.formWebsite = store.website ?? '';
+    this.formError.set(null);
     this.editingId.set(store.id);
     this.showStoreForm.set(true);
   }
@@ -75,11 +83,14 @@ export class StoresComponent implements OnInit {
   closeForm() {
     this.showStoreForm.set(false);
     this.editingId.set(null);
+    this.formError.set(null);
   }
 
   save() {
     this.saving.set(true);
+    this.formError.set(null);
     const id = this.editingId();
+
     const op = id
       ? this.storeService.update(id, {
           storeName: this.formName,
@@ -100,58 +111,34 @@ export class StoresComponent implements OnInit {
         if (id) {
           this.stores.update(list => list.map(s => s.id === id ? { ...s, ...store } : s));
         } else {
-          this.stores.update(list => [store, ...list]);
+          this.stores.update(list => [...list, store].sort((a, b) => a.storeName.localeCompare(b.storeName)));
         }
         this.saving.set(false);
         this.closeForm();
       },
-      error: () => this.saving.set(false)
+      error: (err) => {
+        this.formError.set(err.error?.error ?? 'A apărut o eroare. Încearcă din nou.');
+        this.saving.set(false);
+      }
     });
   }
 
   deleteStore(store: Store) {
-    if (!confirm(`Delete "${store.storeName}"? This cannot be undone.`)) return;
-    this.storeService.delete(store.id).subscribe(() => {
-      this.stores.update(list => list.filter(s => s.id !== store.id));
-      if (this.expandedStoreId() === store.id) this.expandedStoreId.set(null);
+    if (!confirm(`Ștergi magazinul "${store.storeName}"? Această acțiune nu poate fi anulată.`)) return;
+    this.errorMsg.set(null);
+    this.storeService.delete(store.id).subscribe({
+      next: () => {
+        this.stores.update(list => list.filter(s => s.id !== store.id));
+      },
+      error: () => this.errorMsg.set('Ștergerea a eșuat.')
     });
   }
 
-  toggleKeys(store: Store) {
-    if (this.expandedStoreId() === store.id) {
-      this.expandedStoreId.set(null);
-      this.generatedKey.set(null);
-      return;
-    }
-    this.expandedStoreId.set(store.id);
-    this.generatedKey.set(null);
-    this.keysLoading.set(true);
-    this.storeService.getApiKeys(store.id).subscribe(keys => {
-      this.storeKeys.set(keys);
-      this.keysLoading.set(false);
+  copyId(id: string, key: string) {
+    navigator.clipboard.writeText(id).then(() => {
+      this.copiedId.set(key);
+      setTimeout(() => this.copiedId.set(null), 2000);
     });
-  }
-
-  generateKey(storeId: string) {
-    this.storeService.generateApiKey({ storeId, expiresAt: null }).subscribe(key => {
-      this.generatedKey.set(key);
-      this.storeKeys.update(keys => [key, ...keys]);
-      this.stores.update(list =>
-        list.map(s => s.id === storeId ? { ...s, apiKeyCount: s.apiKeyCount + 1 } : s)
-      );
-    });
-  }
-
-  deactivateKey(keyId: string) {
-    this.storeService.deactivateApiKey(keyId).subscribe(res => {
-      this.storeKeys.update(keys =>
-        keys.map(k => k.id === keyId ? { ...k, isActive: res.isActive } : k)
-      );
-    });
-  }
-
-  dismissGeneratedKey() {
-    this.generatedKey.set(null);
   }
 
   logout() { this.auth.logout(); }

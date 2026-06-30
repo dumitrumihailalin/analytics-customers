@@ -13,6 +13,14 @@ export class OrganizationService {
     return this.http.get<Organization[]>(this.api);
   }
 
+  getMine() {
+    return this.http.get<Organization>(`${this.api}/mine`);
+  }
+
+  updateMine(req: UpdateOrganizationRequest) {
+    return this.http.put<Organization>(`${this.api}/mine`, req);
+  }
+
   create(req: CreateOrganizationRequest) {
     return this.http.post<Organization>(this.api, req);
   }

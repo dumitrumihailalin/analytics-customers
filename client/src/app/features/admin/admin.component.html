@@ -36,11 +36,55 @@
           <span class="label">Platform Revenue</span>
           <span class="value">${{ stats()!.platformTotalRevenue | number:'1.2-2' }}</span>
         </div>
+        <div class="stat-card">
+          <span class="label">Organizations</span>
+          <span class="value">{{ organizations().length }}</span>
+        </div>
+      </div>
+    }
+
+    <!-- Create User Modal -->
+    @if (showCreateUser()) {
+      <div class="modal-backdrop" (click)="closeCreateUser()">
+        <div class="modal" (click)="$event.stopPropagation()">
+          <h2>New User</h2>
+
+          @if (formError()) {
+            <div class="alert-error">{{ formError() }}</div>
+          }
+
+          <form (ngSubmit)="createUser()">
+            <label>Full Name *
+              <input type="text" [(ngModel)]="formFullName" name="fullName" required autofocus placeholder="First Last" />
+            </label>
+            <label>Email *
+              <input type="email" [(ngModel)]="formEmail" name="email" required placeholder="user@example.com" />
+            </label>
+            <label>Password *
+              <div class="password-wrap">
+                <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="formPassword" name="password" required placeholder="Min. 6 characters" />
+                <button type="button" class="eye-btn" (click)="showPassword = !showPassword" tabindex="-1">
+                  {{ showPassword ? '🙈' : '👁' }}
+                </button>
+              </div>
+            </label>
+            <p class="form-hint">User will be created with <strong>User</strong> level and assigned to your organization.</p>
+            <div class="modal-actions">
+              <button type="button" class="btn-cancel" (click)="closeCreateUser()">Cancel</button>
+              <button type="submit" class="btn-primary" [disabled]="saving() || !formFullName || !formEmail || !formPassword">
+                {{ saving() ? 'Creating…' : 'Create User' }}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     }
 
     <section class="section">
-      <h2>Users</h2>
+      <div class="section-header">
+        <h2>Users</h2>
+        <button class="btn-primary" (click)="openCreateUser()">+ New User</button>
+      </div>
       <table>
         <thead>
           <tr>
@@ -60,6 +104,51 @@
                 </button>
               </td>
             </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2>Organizations</h2>
+        <a routerLink="/organizations" class="btn-link">Manage →</a>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th><th>Country</th><th>Address</th><th>Website</th><th>Users</th><th>Stores</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (org of organizations(); track org.id) {
+            <tr>
+              <td class="org-name">{{ org.name }}</td>
+              <td>{{ org.country ?? '—' }}</td>
+              <td class="text-muted">{{ org.address ?? '—' }}</td>
+              <td>
+                @if (org.webSite) {
+                  <a [href]="org.webSite" target="_blank" rel="noopener" class="link">{{ org.webSite }}</a>
+                } @else {
+                  —
+                }
+              </td>
+              <td><span class="count-pill">{{ org.userCount }}</span></td>
+              <td><span class="count-pill">{{ org.storeCount }}</span></td>
+              <td>
+                <span class="badge" [class.active]="org.isActive" [class.inactive]="!org.isActive">
+                  {{ org.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td>
+                <button class="btn-sm" (click)="toggleOrg(org)">
+                  {{ org.isActive ? 'Deactivate' : 'Activate' }}
+                </button>
+              </td>
+            </tr>
+          }
+          @empty {
+            <tr><td colspan="8" class="empty">No organizations yet.</td></tr>
           }
         </tbody>
       </table>

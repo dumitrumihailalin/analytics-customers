@@ -243,3 +243,58 @@ table {
   gap: .75rem;
   margin-top: 1.5rem;
 }
+
+/* ── User own-org card ── */
+.org-card { padding: 2rem; }
+
+.org-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.org-avatar {
+  width: 56px; height: 56px;
+  border-radius: 12px;
+  background: #6c63ff;
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.org-title { margin: 0 0 .4rem; font-size: 1.25rem; }
+
+.org-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.org-field {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+}
+
+.field-label {
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #aaa;
+}
+
+.field-value { font-size: .95rem; color: #1e1e2e; }
+
+.link { color: #6c63ff; text-decoration: none; &:hover { text-decoration: underline; } }
+.text-muted { color: #888; font-size: .85rem; }
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #666;
+  p { margin: .4rem 0; }
+  .text-muted { color: #aaa; font-size: .9rem; }
+}

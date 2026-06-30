@@ -13,5 +13,4 @@ public class SubscriptionKey
     public Guid? StoreId { get; set; }
 
     [NotMapped] public User? User { get; set; }
-    [NotMapped] public Store? Store { get; set; }
 }

@@ -178,6 +178,37 @@
     &.urgent { background: #fce8e8; color: #c0392b; }
   }
 
+  .store-id-row {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    margin-bottom: .75rem;
+
+    .store-id-label { font-size: .75rem; color: #aaa; white-space: nowrap; }
+
+    .store-id-val {
+      font-family: monospace;
+      font-size: .72rem;
+      color: #666;
+      background: #f4f4f6;
+      padding: .15rem .4rem;
+      border-radius: 3px;
+      word-break: break-all;
+      flex: 1;
+    }
+
+    .copy-store-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: .85rem;
+      color: #aaa;
+      padding: 0 .2rem;
+      flex-shrink: 0;
+      &:hover { color: #6c63ff; }
+    }
+  }
+
   .issued-at { font-size: .78rem; color: #bbb; }
 }
 
@@ -247,6 +278,29 @@ table {
 .key-icon {
   font-size: 2rem;
   margin-bottom: .5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  margin-bottom: 1rem;
+  text-align: left;
+
+  label { font-size: .85rem; font-weight: 600; color: #444; }
+
+  select {
+    padding: .5rem .75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: .9rem;
+    background: #fff;
+    cursor: pointer;
+
+    &:focus { outline: none; border-color: #6c63ff; box-shadow: 0 0 0 3px rgba(108,99,255,.15); }
+  }
+
+  small { font-size: .75rem; color: #888; }
 }
 
 .modal-actions {

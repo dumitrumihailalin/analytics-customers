@@ -4,7 +4,7 @@ public record WeeklyRevenueDto(int Week, int Year, decimal TotalRevenue, int Ord
 
 public record MonthlyRevenueDto(int Month, int Year, decimal TotalRevenue, int OrderCount, int QuantitySold);
 
-public record CategoryBreakdownDto(string Category, decimal TotalRevenue, int OrderCount, int QuantitySold);
+public record ProductBreakdownDto(string ProductId, decimal TotalRevenue, int RecordCount, int QuantitySold);
 
 public record DashboardSummaryDto(
     decimal TotalRevenue,
@@ -13,7 +13,7 @@ public record DashboardSummaryDto(
     decimal AverageOrderValue,
     List<WeeklyRevenueDto> WeeklyRevenue,
     List<MonthlyRevenueDto> MonthlyRevenue,
-    List<CategoryBreakdownDto> CategoryBreakdown
+    List<ProductBreakdownDto> ProductBreakdown
 );
 
 public record SubscriptionKeyDto(
@@ -22,8 +22,13 @@ public record SubscriptionKeyDto(
     DateTime IssuedAt,
     DateTime ExpiresAt,
     bool IsActive,
-    int DaysRemaining
+    int DaysRemaining,
+    Guid? StoreId
 );
+
+public record GenerateKeyRequest(Guid? StoreId);
+
+public record AssignStoreRequest(Guid StoreId);
 
 public record AdminStatsDto(
     int TotalUsers,

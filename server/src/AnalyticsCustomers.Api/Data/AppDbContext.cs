@@ -34,10 +34,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         builder.Entity<Analytic>(e =>
         {
             e.Property(a => a.Price).HasColumnType("numeric(12,2)");
+            e.Property(a => a.CreatedAt).HasColumnName("CreatedAt").HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.HasOne(a => a.Store).WithMany(s => s.Analytics)
              .HasForeignKey(a => a.StoreId)
              .OnDelete(DeleteBehavior.Cascade);
-            e.HasIndex(a => new { a.StoreId, a.RecordedAt });
+            e.HasIndex(a => new { a.StoreId, a.CreatedAt });
             e.HasIndex(a => new { a.StoreId, a.ProductId });
         });
 

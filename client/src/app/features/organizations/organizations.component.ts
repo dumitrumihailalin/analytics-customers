@@ -16,6 +16,7 @@ import { Organization } from '../../core/models/organization.models';
 })
 export class OrganizationsComponent implements OnInit {
   organizations = signal<Organization[]>([]);
+  myOrg = signal<Organization | null>(null);
   loading = signal(true);
   errorMsg = signal<string | null>(null);
 
@@ -24,7 +25,10 @@ export class OrganizationsComponent implements OnInit {
   filtered = computed(() => {
     const q = this.search.trim().toLowerCase();
     return q
-      ? this.organizations().filter(o => o.name.toLowerCase().includes(q) || (o.country ?? '').toLowerCase().includes(q))
+      ? this.organizations().filter(o =>
+          o.name.toLowerCase().includes(q) ||
+          (o.country ?? '').toLowerCase().includes(q) ||
+          (o.address ?? '').toLowerCase().includes(q))
       : this.organizations();
   });
 
@@ -35,6 +39,8 @@ export class OrganizationsComponent implements OnInit {
 
   formName = '';
   formCountry = '';
+  formAddress = '';
+  formWebSite = '';
 
   constructor(private orgService: OrganizationService, public auth: AuthService) {}
 
@@ -44,15 +50,24 @@ export class OrganizationsComponent implements OnInit {
 
   load() {
     this.loading.set(true);
-    this.orgService.getAll().subscribe(orgs => {
-      this.organizations.set(orgs);
-      this.loading.set(false);
-    });
+    if (this.auth.isAdmin()) {
+      this.orgService.getAll().subscribe(orgs => {
+        this.organizations.set(orgs);
+        this.loading.set(false);
+      });
+    } else {
+      this.orgService.getMine().subscribe({
+        next: org => { this.myOrg.set(org); this.loading.set(false); },
+        error: () => { this.myOrg.set(null); this.loading.set(false); }
+      });
+    }
   }
 
   openCreate() {
     this.formName = '';
     this.formCountry = '';
+    this.formAddress = '';
+    this.formWebSite = '';
     this.formError.set(null);
     this.editingId.set(null);
     this.showForm.set(true);
@@ -61,6 +76,8 @@ export class OrganizationsComponent implements OnInit {
   openEdit(org: Organization) {
     this.formName = org.name;
     this.formCountry = org.country ?? '';
+    this.formAddress = org.address ?? '';
+    this.formWebSite = org.webSite ?? '';
     this.formError.set(null);
     this.editingId.set(org.id);
     this.showForm.set(true);
@@ -73,16 +90,24 @@ export class OrganizationsComponent implements OnInit {
   }
 
   save() {
-    const req = { name: this.formName.trim(), country: this.formCountry.trim() || null };
+    const req = {
+      name: this.formName.trim(),
+      country: this.formCountry.trim() || null,
+      address: this.formAddress.trim() || null,
+      webSite: this.formWebSite.trim() || null
+    };
     this.saving.set(true);
     this.formError.set(null);
     const id = this.editingId();
-    const op = id ? this.orgService.update(id, req) : this.orgService.create(req);
+    const op = !this.auth.isAdmin() && id
+      ? this.orgService.updateMine(req)
+      : id ? this.orgService.update(id, req) : this.orgService.create(req);
 
     op.subscribe({
       next: org => {
         if (id) {
           this.organizations.update(list => list.map(o => o.id === id ? { ...o, ...org } : o));
+          if (this.myOrg()?.id === id) this.myOrg.update(cur => cur ? { ...cur, ...org } : cur);
         } else {
           this.organizations.update(list => [...list, org].sort((a, b) => a.name.localeCompare(b.name)));
         }

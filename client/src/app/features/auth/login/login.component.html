@@ -12,7 +12,12 @@
         <input type="email" [(ngModel)]="email" name="email" required autocomplete="email" />
       </label>
       <label>Password
-        <input type="password" [(ngModel)]="password" name="password" required autocomplete="current-password" />
+        <div class="password-wrap">
+          <input [type]="showPassword() ? 'text' : 'password'" [(ngModel)]="password" name="password" required autocomplete="current-password" />
+          <button type="button" class="eye-btn" (click)="showPassword.set(!showPassword())" tabindex="-1">
+            {{ showPassword() ? '🙈' : '👁' }}
+          </button>
+        </div>
       </label>
       <button type="submit" [disabled]="loading()">
         {{ loading() ? 'Signing in…' : 'Sign in' }}

@@ -14,10 +14,10 @@ export interface MonthlyRevenue {
   quantitySold: number;
 }
 
-export interface CategoryBreakdown {
-  category: string;
+export interface ProductBreakdown {
+  productId: string;
   totalRevenue: number;
-  orderCount: number;
+  recordCount: number;
   quantitySold: number;
 }
 
@@ -28,7 +28,7 @@ export interface DashboardSummary {
   averageOrderValue: number;
   weeklyRevenue: WeeklyRevenue[];
   monthlyRevenue: MonthlyRevenue[];
-  categoryBreakdown: CategoryBreakdown[];
+  productBreakdown: ProductBreakdown[];
 }
 
 export interface AdminStats {

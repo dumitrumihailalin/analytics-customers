@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AnalyticsCustomers.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260627212117_AddPermissions")]
-    partial class AddPermissions
+    [Migration("20260629174720_AddOrganizationAddressWebSite")]
+    partial class AddOrganizationAddressWebSite
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

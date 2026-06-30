@@ -4,13 +4,9 @@
     <a routerLink="/dashboard" class="nav-item">Dashboard</a>
     <a routerLink="/subscription" class="nav-item active">Subscription</a>
     <a routerLink="/imports" class="nav-item">Imports</a>
-    @if (auth.isAdmin()) {
-      <a routerLink="/organizations" class="nav-item">Organizations</a>
-    }
+    <a routerLink="/organizations" class="nav-item">Organizations</a>
     <a routerLink="/analytics" class="nav-item">Analytics</a>
-    @if (auth.isOrgAdmin()) {
-      <a routerLink="/stores" class="nav-item">Stores</a>
-    }
+    <a routerLink="/stores" class="nav-item">Stores</a>
     @if (auth.isAdmin()) {
       <a routerLink="/admin" class="nav-item">Admin</a>
     }
@@ -38,6 +34,17 @@
               A new key valid for <strong>1 year</strong> will be created for your account.
               Any existing active key will be revoked.
             </p>
+
+            <div class="form-group">
+              <label for="storeSelect">Link to Store</label>
+              <select id="storeSelect" [(ngModel)]="selectedStoreId">
+                <option value="">— No store —</option>
+                @for (s of stores(); track s.id) {
+                  <option [value]="s.id">{{ s.storeName }}</option>
+                }
+              </select>
+              <small>Required to use the ingest API.</small>
+            </div>
 
             <div class="modal-actions">
               <button class="btn-cancel" (click)="closeModal()">Cancel</button>
@@ -94,6 +101,15 @@
                 {{ keyCopied() ? '✓ Copied' : 'Copy' }}
               </button>
             </div>
+            @if (info()!.storeId) {
+              <div class="store-id-row">
+                <span class="store-id-label">Store ID:</span>
+                <code class="store-id-val">{{ info()!.storeId }}</code>
+                <button class="copy-store-btn" (click)="copyStoreId(info()!.storeId!)" title="Copy Store ID">
+                  {{ storeIdCopied() ? '✓' : '⎘' }}
+                </button>
+              </div>
+            }
             <div class="expiry-row">
               <span class="expiry-label">Valid for</span>
               <span class="days-badge" [class]="urgencyClass(info()!.daysRemaining)">

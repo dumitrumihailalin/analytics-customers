@@ -18,11 +18,10 @@ namespace AnalyticsCustomers.Api.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     StoreId = table.Column<Guid>(type: "uuid", nullable: false),
                     ProductId = table.Column<string>(type: "text", nullable: false),
-                    CategoryId = table.Column<string>(type: "text", nullable: false),
                     Price = table.Column<decimal>(type: "numeric(12,2)", nullable: false),
                     QuantitySold = table.Column<int>(type: "integer", nullable: false),
                     Stock = table.Column<int>(type: "integer", nullable: false),
-                    RecordedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -41,9 +40,9 @@ namespace AnalyticsCustomers.Api.Migrations
                 columns: new[] { "StoreId", "ProductId" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Analytics_StoreId_RecordedAt",
+                name: "IX_Analytics_StoreId_CreatedAt",
                 table: "Analytics",
-                columns: new[] { "StoreId", "RecordedAt" });
+                columns: new[] { "StoreId", "CreatedAt" });
         }
 
         /// <inheritdoc />

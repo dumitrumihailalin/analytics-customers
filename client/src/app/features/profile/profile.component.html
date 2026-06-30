@@ -4,13 +4,9 @@
     <a routerLink="/dashboard" class="nav-item">Dashboard</a>
     <a routerLink="/subscription" class="nav-item">Subscription</a>
     <a routerLink="/imports" class="nav-item">Imports</a>
-    @if (auth.isAdmin()) {
-      <a routerLink="/organizations" class="nav-item">Organizations</a>
-    }
+    <a routerLink="/organizations" class="nav-item">Organizations</a>
     <a routerLink="/analytics" class="nav-item">Analytics</a>
-    @if (auth.isOrgAdmin()) {
-      <a routerLink="/stores" class="nav-item">Stores</a>
-    }
+    <a routerLink="/stores" class="nav-item">Stores</a>
     @if (auth.isAdmin()) {
       <a routerLink="/admin" class="nav-item">Admin</a>
     }

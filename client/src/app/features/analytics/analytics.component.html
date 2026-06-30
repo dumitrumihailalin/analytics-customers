@@ -4,13 +4,9 @@
     <a routerLink="/dashboard" class="nav-item">Dashboard</a>
     <a routerLink="/subscription" class="nav-item">Subscription</a>
     <a routerLink="/imports" class="nav-item">Imports</a>
-    @if (auth.isAdmin()) {
-      <a routerLink="/organizations" class="nav-item">Organizations</a>
-    }
+    <a routerLink="/organizations" class="nav-item">Organizations</a>
     <a routerLink="/analytics" class="nav-item active">Analytics</a>
-    @if (auth.isOrgAdmin()) {
-      <a routerLink="/stores" class="nav-item">Stores</a>
-    }
+    <a routerLink="/stores" class="nav-item">Stores</a>
     @if (auth.isAdmin()) {
       <a routerLink="/admin" class="nav-item">Admin</a>
     }
@@ -78,24 +74,25 @@
         </section>
 
         <section class="section">
-          <h2>By Category</h2>
-          @if (data()!.categoryBreakdown.length === 0) {
+          <h2>By Product</h2>
+          @if (data()!.productBreakdown.length === 0) {
             <div class="empty">No data for this year.</div>
           } @else {
             <table>
               <thead>
-                <tr><th>Category</th><th>Orders</th><th>Revenue</th><th>Share</th></tr>
+                <tr><th>Product ID</th><th>Qty Sold</th><th>Records</th><th>Revenue</th><th>Share</th></tr>
               </thead>
               <tbody>
-                @for (cat of data()!.categoryBreakdown; track cat.category) {
+                @for (p of data()!.productBreakdown; track p.productId) {
                   <tr>
-                    <td class="cat-name">{{ cat.category }}</td>
-                    <td>{{ cat.orderCount }}</td>
-                    <td class="revenue-cell">{{ cat.totalRevenue | currency }}</td>
+                    <td class="cat-name">{{ p.productId }}</td>
+                    <td>{{ p.quantitySold }}</td>
+                    <td>{{ p.recordCount }}</td>
+                    <td class="revenue-cell">{{ p.totalRevenue | currency }}</td>
                     <td>
                       <div class="share-bar">
-                        <div class="bar-fill" [style.width.%]="share(cat.totalRevenue)"></div>
-                        <span class="share-label">{{ share(cat.totalRevenue) }}%</span>
+                        <div class="bar-fill" [style.width.%]="share(p.totalRevenue)"></div>
+                        <span class="share-label">{{ share(p.totalRevenue) }}%</span>
                       </div>
                     </td>
                   </tr>

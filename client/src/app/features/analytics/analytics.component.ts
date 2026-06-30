@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
-import { DashboardSummary } from '../../core/models/analytics.models';
+import { DashboardSummary, ProductBreakdown } from '../../core/models/analytics.models';
 
 @Component({
   selector: 'app-analytics',
@@ -21,10 +21,9 @@ export class AnalyticsComponent implements OnInit {
   selectedYear = this.currentYear;
   years = Array.from({ length: 5 }, (_, i) => this.currentYear - i);
 
-  totalRevenueShare = computed(() => {
-    const total = this.data()?.categoryBreakdown.reduce((s, c) => s + c.totalRevenue, 0) ?? 0;
-    return total;
-  });
+  totalProductRevenue = computed(() =>
+    this.data()?.productBreakdown.reduce((s, p) => s + p.totalRevenue, 0) ?? 0
+  );
 
   constructor(private analyticsService: AnalyticsService, public auth: AuthService) {}
 
@@ -45,7 +44,7 @@ export class AnalyticsComponent implements OnInit {
   }
 
   share(revenue: number): number {
-    const total = this.totalRevenueShare();
+    const total = this.totalProductRevenue();
     return total > 0 ? Math.round((revenue / total) * 100) : 0;
   }
 

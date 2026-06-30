@@ -35,12 +35,12 @@ export const routes: Routes = [
   },
   {
     path: 'stores',
-    canActivate: [authGuard, orgAdminGuard],
+    canActivate: [authGuard],
     loadComponent: () => import('./features/stores/stores.component').then(m => m.StoresComponent)
   },
   {
     path: 'organizations',
-    canActivate: [authGuard, adminGuard],
+    canActivate: [authGuard],
     loadComponent: () => import('./features/organizations/organizations.component').then(m => m.OrganizationsComponent)
   },
   {

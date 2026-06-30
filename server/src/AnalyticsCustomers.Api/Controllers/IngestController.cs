@@ -11,7 +11,6 @@ namespace AnalyticsCustomers.Api.Controllers;
 public class IngestController(AppDbContext db) : ControllerBase
 {
     /// POST /api/ingest/analytics
-    /// Authenticated via SubscriptionKey.Key; StoreId must be set on the key.
     [HttpPost("analytics")]
     public async Task<IActionResult> IngestAnalytic([FromBody] AnalyticsIngestRequest req)
     {
@@ -24,14 +23,10 @@ public class IngestController(AppDbContext db) : ControllerBase
         if (key.ExpiresAt < DateTime.UtcNow)
             return StatusCode(403, new { error = "API key has expired." });
 
-        if (!key.StoreId.HasValue)
-            return BadRequest(new { error = "Key is not associated with a store." });
-
         var record = new Analytic
         {
-            StoreId = key.StoreId.Value,
+            StoreId = req.StoreId,
             ProductId = req.ProductId,
-            CategoryId = req.CategoryId,
             Price = req.Price,
             QuantitySold = req.QuantitySold,
             Stock = req.Stock
@@ -40,7 +35,7 @@ public class IngestController(AppDbContext db) : ControllerBase
         db.Analytics.Add(record);
         await db.SaveChangesAsync();
 
-        return Ok(new { record.Id, record.StoreId, record.RecordedAt });
+        return Ok(new { record.Id, record.StoreId, record.CreatedAt });
     }
 
     /// POST /api/ingest/analytics/bulk
@@ -56,22 +51,18 @@ public class IngestController(AppDbContext db) : ControllerBase
         if (key.ExpiresAt < DateTime.UtcNow)
             return StatusCode(403, new { error = "API key has expired." });
 
-        if (!key.StoreId.HasValue)
-            return BadRequest(new { error = "Key is not associated with a store." });
-
         if (req.Items is null || req.Items.Count == 0)
             return BadRequest(new { error = "Items list cannot be empty." });
 
         var now = DateTime.UtcNow;
         var records = req.Items.Select(item => new Analytic
         {
-            StoreId = key.StoreId.Value,
+            StoreId = item.StoreId,
             ProductId = item.ProductId,
-            CategoryId = item.CategoryId,
             Price = item.Price,
             QuantitySold = item.QuantitySold,
             Stock = item.Stock,
-            RecordedAt = now
+            CreatedAt = now
         }).ToList();
 
         db.Analytics.AddRange(records);
@@ -80,7 +71,7 @@ public class IngestController(AppDbContext db) : ControllerBase
         return Ok(new
         {
             Accepted = records.Count,
-            ReceivedAt = now,
+            CreatedAt = now,
             Ids = records.Select(r => r.Id)
         });
     }

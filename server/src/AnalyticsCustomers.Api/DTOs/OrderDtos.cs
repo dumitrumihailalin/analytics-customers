@@ -12,17 +12,15 @@ public record OrderRequest(
 public record BulkOrderRequest(List<OrderRequest> Orders);
 
 public record IngestRequest(
-    string ApiKey,
     string ProductId,
-    string CategoryId,
     decimal Price,
     int QuantitySold,
     int Stock
 );
 
 public record BulkIngestItem(
+    Guid StoreId,
     string ProductId,
-    string CategoryId,
     decimal Price,
     int QuantitySold,
     int Stock
@@ -35,9 +33,9 @@ public record BulkIngestRequest(
 
 public class AnalyticsIngestRequest
 {
-    public string ApiKey { get; set; } = null!;   // resolves StoreId, NOT persisted
+    public string ApiKey { get; set; } = null!;
+    public Guid StoreId { get; set; }
     public string ProductId { get; set; } = null!;
-    public string CategoryId { get; set; } = null!;
     public decimal Price { get; set; }
     public int QuantitySold { get; set; }
     public int Stock { get; set; }

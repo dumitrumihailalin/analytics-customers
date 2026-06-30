@@ -20,10 +20,9 @@ public class SubscriptionController(AppDbContext db) : ControllerBase
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var user = await db.Users.FindAsync(userId);
 
-        var activeKey = await db.SubscriptionKeys
+        var activeKeyRecord = await db.SubscriptionKeys
             .Where(k => k.UserId == userId && k.IsActive)
             .OrderByDescending(k => k.IssuedAt)
-            .Select(k => k.Key)
             .FirstOrDefaultAsync();
 
         if (user?.OrganizationId is null)
@@ -33,7 +32,8 @@ public class SubscriptionController(AppDbContext db) : ControllerBase
                 isActive = false,
                 startDate = DateTime.UtcNow,
                 endDate = (DateTime?)null,
-                key = activeKey,
+                key = activeKeyRecord?.Key,
+                storeId = activeKeyRecord?.StoreId,
                 daysRemaining = 0
             });
 
@@ -49,7 +49,8 @@ public class SubscriptionController(AppDbContext db) : ControllerBase
                 isActive = true,
                 startDate = DateTime.UtcNow,
                 endDate = (DateTime?)null,
-                key = activeKey,
+                key = activeKeyRecord?.Key,
+                storeId = activeKeyRecord?.StoreId,
                 daysRemaining = 0
             });
 
@@ -63,16 +64,20 @@ public class SubscriptionController(AppDbContext db) : ControllerBase
             sub.s.IsActive,
             sub.s.StartDate,
             sub.s.EndDate,
-            key = activeKey,
+            key = activeKeyRecord?.Key,
+            storeId = activeKeyRecord?.StoreId,
             daysRemaining
         });
     }
 
     [HttpPost("key/generate")]
-    public async Task<IActionResult> GenerateKey()
+    public async Task<IActionResult> GenerateKey([FromBody] GenerateKeyRequest? req = null)
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var user = await db.Users.FindAsync(userId);
+
+        if (req?.StoreId is not null && !await db.Stores.AnyAsync(s => s.Id == req.StoreId))
+            return BadRequest(new { error = "Store not found." });
 
         var existing = await db.SubscriptionKeys
             .Where(k => k.UserId == userId && k.IsActive)
@@ -90,7 +95,8 @@ public class SubscriptionController(AppDbContext db) : ControllerBase
             Key = rawKey,
             IssuedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddYears(1),
-            IsActive = true
+            IsActive = true,
+            StoreId = req?.StoreId
         };
         db.SubscriptionKeys.Add(key);
         await db.SaveChangesAsync();
@@ -101,8 +107,28 @@ public class SubscriptionController(AppDbContext db) : ControllerBase
             key.IssuedAt,
             key.ExpiresAt,
             key.IsActive,
+            key.StoreId,
             OrganizationId = user?.OrganizationId
         });
+    }
+
+    [HttpPatch("key/assign-store")]
+    public async Task<IActionResult> AssignStore([FromBody] AssignStoreRequest req)
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        var key = await db.SubscriptionKeys
+            .FirstOrDefaultAsync(k => k.UserId == userId && k.IsActive);
+
+        if (key is null) return NotFound(new { error = "No active subscription key found." });
+
+        if (!await db.Stores.AnyAsync(s => s.Id == req.StoreId))
+            return BadRequest(new { error = "Store not found." });
+
+        key.StoreId = req.StoreId;
+        await db.SaveChangesAsync();
+
+        return Ok(new { key.Id, key.Key, key.StoreId });
     }
 
     [HttpGet("key/history")]
@@ -116,7 +142,8 @@ public class SubscriptionController(AppDbContext db) : ControllerBase
 
         return Ok(keys.Select(k => new SubscriptionKeyDto(
             k.Id, k.Key, k.IssuedAt, k.ExpiresAt, k.IsActive,
-            Math.Max(0, (int)(k.ExpiresAt - DateTime.UtcNow).TotalDays)
+            Math.Max(0, (int)(k.ExpiresAt - DateTime.UtcNow).TotalDays),
+            k.StoreId
         )));
     }
 }

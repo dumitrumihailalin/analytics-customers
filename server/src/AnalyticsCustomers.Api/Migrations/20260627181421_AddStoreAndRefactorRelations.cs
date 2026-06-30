@@ -11,9 +11,7 @@ namespace AnalyticsCustomers.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Analytics_Users_StoreId",
-                table: "Analytics");
+            migrationBuilder.Sql("ALTER TABLE \"Analytics\" DROP CONSTRAINT IF EXISTS \"FK_Analytics_Users_StoreId\"");
 
             migrationBuilder.DropColumn(
                 name: "Website",

@@ -28,10 +28,6 @@ namespace AnalyticsCustomers.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("CategoryId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<decimal>("Price")
                         .HasColumnType("numeric(12,2)");
 
@@ -42,7 +38,8 @@ namespace AnalyticsCustomers.Api.Migrations
                     b.Property<int>("QuantitySold")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("RecordedAt")
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnName("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Stock")
@@ -55,7 +52,7 @@ namespace AnalyticsCustomers.Api.Migrations
 
                     b.HasIndex("StoreId", "ProductId");
 
-                    b.HasIndex("StoreId", "RecordedAt");
+                    b.HasIndex("StoreId", "CreatedAt");
 
                     b.ToTable("Analytics");
                 });

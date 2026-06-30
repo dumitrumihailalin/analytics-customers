@@ -18,31 +18,21 @@ public class ApiKeysController(AppDbContext db) : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetByStore([FromQuery] Guid storeId)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var level = User.FindFirstValue(ClaimTypes.Role) ?? "User";
-
-        var store = await db.Stores.Include(s => s.Organization).FirstOrDefaultAsync(s => s.Id == storeId);
-        if (store is null) return NotFound();
-
-        if (level != "PlatformAdmin")
-        {
-            var user = await db.Users.FindAsync(userId);
-            if (user?.OrganizationId != store.OrganizationId) return Forbid();
-        }
-
-        var keys = await db.ApiKeys
-            .Where(k => k.StoreId == storeId)
-            .OrderByDescending(k => k.CreatedAt)
-            .Select(k => new ApiKeyResponse(
-                k.Id, k.StoreId, store.StoreName, k.Prefix,
-                k.IsActive, k.CreatedAt, k.ExpiresAt, k.LastUsedAt))
-            .ToListAsync();
+        var keys = await (
+            from k in db.ApiKeys
+            join s in db.Stores on k.StoreId equals s.Id
+            where k.StoreId == storeId
+            orderby k.CreatedAt descending
+            select new ApiKeyResponse(
+                k.Id, k.StoreId, s.StoreName, k.Prefix,
+                k.IsActive, k.CreatedAt, k.ExpiresAt, k.LastUsedAt)
+        ).ToListAsync();
 
         return Ok(keys);
     }
 
     [HttpPost]
-    [Authorize(Roles = "PlatformAdmin,OrgAdmin")]
+    [Authorize(Roles = "PlatformAdmin")]
     public async Task<IActionResult> Generate([FromBody] CreateApiKeyRequest req)
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -79,7 +69,6 @@ public class ApiKeysController(AppDbContext db) : ControllerBase
     }
 
     [HttpPatch("{id:guid}/deactivate")]
-    [Authorize(Roles = "PlatformAdmin,OrgAdmin")]
     public async Task<IActionResult> Deactivate(Guid id)
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);

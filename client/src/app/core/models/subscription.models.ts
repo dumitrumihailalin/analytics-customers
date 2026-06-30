@@ -5,6 +5,7 @@ export interface SubscriptionKey {
   expiresAt: string;
   isActive: boolean;
   daysRemaining: number;
+  storeId: string | null;
 }
 
 export interface SubscriptionInfo {
@@ -13,5 +14,6 @@ export interface SubscriptionInfo {
   startDate: string;
   endDate: string | null;
   key: string | null;
+  storeId: string | null;
   daysRemaining: number;
 }
